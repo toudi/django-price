@@ -1,0 +1,5 @@
+The basic idea behind this field is that it allows for easy storing price values:
+
+netto, tax, gross.
+
+the default storage of amount is decimal field, but you can specify your own via settings.
