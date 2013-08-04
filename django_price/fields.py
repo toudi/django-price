@@ -1,60 +1,15 @@
+
 from django.db.models import fields
 from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser
 from decimal import Decimal
-
+from django_price import forms, Price
 
 tax_field_name = lambda name: '%s_tax' % name
 netto_field_name = lambda name: '%s_netto' % name
 gross_field_name = lambda name: '%s_gross' % name
 is_gross_name = lambda name: '%s_is_gross' % name
-
-
-class Price(object):
-    def __init__(self, value=0, is_gross=False, tax=0):
-        self._tax = None
-        self._value = None
-        self.value = value
-        self.is_gross = is_gross
-        self.tax = tax
-        if self.tax > 1:
-            self.tax/=100
-
-    def set_tax(self, value):
-        self._tax = Decimal(value)
-
-    def get_tax(self):
-        return self._tax
-
-    def set_value(self, value):
-        try:
-            self._value = Decimal(value)
-        except TypeError:
-            self._value = value
-
-    def get_value(self):
-        return self._value
-
-    tax = property(get_tax, set_tax)
-    value = property(get_value, set_value)
-
-    def netto(self):
-        if not self.is_gross:
-            return self.value
-
-        return self.value - self.tax_value()
-
-    def gross(self):
-        if self.is_gross:
-            return self.value
-
-        return self.value + self.tax_value()
-
-    def tax_value(self):
-        return self.value * self.tax
-
-    def __repr__(self):
-        return 'Price(netto=%r,gross=%r,tax=%r,tax_value=%r,is_gross=%r)' % (self.netto(), self.gross(), self.tax, self.tax_value(), self.is_gross)
+field_currency = lambda name: '%s_currency' % name
 
 
 class PriceFieldProxy(object):
@@ -70,9 +25,9 @@ class PriceFieldProxy(object):
         if obj.__dict__[self.is_gross_name]:
             vfield = self.gross_field_name
         return Price(
-            obj.__dict__[vfield],
+            getattr(obj, vfield), #because of getattr we can get django-money instance with the currency.
             obj.__dict__[self.is_gross_name],
-            obj.__dict__[self.tax_field_name]
+            obj.__dict__[self.tax_field_name] or 0
         )
 
     def __get__(self, obj, type=None):
@@ -85,11 +40,19 @@ class PriceFieldProxy(object):
     def __set__(self, obj, value):
         if isinstance(value, Price):
             obj.__dict__[self.netto_field_name] = value.netto()
+            try:
+                setattr(obj, field_currency(self.netto_field_name), value.netto().currency)
+            except:
+                pass
+            try:
+                setattr(obj, field_currency(self.gross_field_name), value.gross().currency)
+            except:
+                pass
             obj.__dict__[self.is_gross_name] = value.is_gross
             obj.__dict__[self.tax_field_name] = value.tax
             obj.__dict__[self.gross_field_name] = value.gross()
-        else:
-            print(obj, value, type(value))
+            # this is needed so that django picks up 'fresh' value in __get__ method.
+            del(obj.__dict__[self.field.name])
 
 class PriceField(fields.Field):
     def __init__(self, **kwargs):
@@ -117,8 +80,17 @@ class PriceField(fields.Field):
         t_field      = fields.DecimalField(max_digits=6, decimal_places=4)
         t_field.creation_counter = self.creation_counter
 
-        #super(PriceField, self).contribute_to_class(cls, name)
+        #cls._meta.add_field(self)
+        self.attname = name
         self.name = name
+        """the whole purpose of this line is to make django think that
+        this is a legitimate field (in terms of forms.ModelForm).
+        Django won't let you use a field which cannot be bound to database column.
+        We therefore set this to netto field name.
+        This **is** important - please refer to get_db_prep_save
+        """
+        self.db_column = netto_field_name(name)
+        super(PriceField, self).contribute_to_class(cls, name)
 
         cls.add_to_class(_netto_field_name, netto_field)
         cls.add_to_class(_is_gross_name, _is_gross)
@@ -126,3 +98,23 @@ class PriceField(fields.Field):
         cls.add_to_class(t_field_name, t_field)
 
         setattr(cls, name, PriceFieldProxy(self))
+
+    def get_db_prep_save(self, value, **kwargs):
+        """This is actually very important method for this field.
+        Django tries to save instances of the fields to the database.
+        Well, PriceField is completely fake field, so we cannot just save it.
+        Therefore we return just the netto value.
+        Note: This is important, because we have set the db_column to netto column
+        This saves us the dirty work of monkey-patching the managers in order to
+        extract all of Price values
+        """
+        try:
+            return value.netto().amount
+        except:
+            return value.netto()
+
+
+    def formfield(self, **kwargs):
+        defaults = {'form_class': forms.PriceField}
+        defaults.update(kwargs)
+        return super(PriceField, self).formfield(**defaults)

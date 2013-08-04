@@ -1,31 +1,46 @@
 from decimal import Decimal
+class Price(object):
+    def __init__(self, value=0, is_gross=False, tax=0):
+        self._tax = None
+        self._value = None
+        self.value = value
+        self.is_gross = is_gross
+        self.tax = tax
+        if self.tax > 1:
+            self.tax/=100
 
-class Amount(object):
-	def __init__(self, value, tax=0, is_gross=False):
-		"""
-		Creates the Amount instance.
+    def set_tax(self, value):
+        self._tax = Decimal(value)
 
-		value is the actual amount (either netto or gross)
-		tax is a decimal object with taxation value.
-		is_gross specifies whether the value already contains the tax or not.
-		"""
-		self._value    = Decimal(value)
-		self._tax      = 1 + Decimal(tax)
-		self._is_gross = is_gross
+    def get_tax(self):
+        return self._tax
 
-	def net_worth(self):
-		if self._is_gross:
-			return self._value / self._tax
-		return self._value
+    def set_value(self, value):
+        try:
+            self._value = Decimal(value)
+        except TypeError:
+            self._value = value
 
-	def gross(self):
-		if self._is_gross:
-			return self._value
+    def get_value(self):
+        return self._value
 
-		return self._value * self._tax
+    tax = property(get_tax, set_tax)
+    value = property(get_value, set_value)
 
-	def tax_amount(self):
-		if self._is_gross:
-			return self._value - self.net_worth()
+    def netto(self):
+        if not self.is_gross:
+            return self.value
 
-		return self._value * self._tax
+        return self.value - self.tax_value()
+
+    def gross(self):
+        if self.is_gross:
+            return self.value
+
+        return self.value + self.tax_value()
+
+    def tax_value(self):
+        return self.value * self.tax
+
+    def __repr__(self):
+        return 'Price(netto=%r,gross=%r,tax=%r,tax_value=%r,is_gross=%r)' % (self.netto(), self.gross(), self.tax, self.tax_value(), self.is_gross)
