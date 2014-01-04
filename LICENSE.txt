@@ -1,0 +1,3 @@
+Anything *BUT* GPL would suffice.
+
+That is, BSD, MIT, X11, etc. Just don't use GPL
