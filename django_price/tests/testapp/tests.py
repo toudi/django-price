@@ -2,6 +2,7 @@ from decimal import Decimal
 from django.test import TestCase
 from django_price.tests.testapp.models import TestModel
 from django_price.price import Price
+from django.db.models import F
 
 
 class ModelTestCase(TestCase):
@@ -28,3 +29,12 @@ class ModelTestCase(TestCase):
         model = TestModel(price_netto=Decimal(15))
         self.assertIsInstance(model.price.get_value(), Price)
         self.assertEquals(model.price.get_value().netto, Decimal(15))
+
+    def test_that_relative_update_works(self):
+        price = Price(10)
+        model = TestModel(price=price)
+        model.save()
+        model.price_netto = F('price_netto') + 10
+        model.save()
+        model = TestModel.objects.get(pk=model.pk)
+        self.assertEquals(model.price.netto, Decimal(20))
