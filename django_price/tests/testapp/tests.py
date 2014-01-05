@@ -6,6 +6,8 @@ from django_price.tests.testapp.models import TestModelTaxForeignKey
 from django_price.models.tax import Tax
 from moneyed import Money
 from django_price.price import Price
+from django_price.price import PriceTaxFK
+from django_price.price import PriceObject
 from django.db.models import F
 
 
@@ -31,7 +33,7 @@ class ModelTestCase(TestCase):
 
         # now, let's create a model, but let's only assign one value.
         model = TestModel(price_netto=Decimal(15))
-        self.assertIsInstance(model.price.get_value(), Price)
+        self.assertIsInstance(model.price.get_value(), PriceObject)
         self.assertEquals(model.price.get_value().netto, Decimal(15))
 
     def test_that_relative_update_works(self):
@@ -59,11 +61,12 @@ class TaxAsForeignKeyTestCase(TestCase):
             description='test tax', value=Decimal('0.22')
         )
 
-        price = Price(100, tax=tax)
+        price = PriceTaxFK(100, tax=tax)
 
         model = TestModelTaxForeignKey(
             price=price
         )
 
         self.assertEquals(122, model.price.gross)
+        self.assertIsInstance(model.price.get_value(), PriceTaxFK)
         self.assertEquals(tax.pk, model.price_tax_id)

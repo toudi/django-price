@@ -1,6 +1,8 @@
 from django.db.models import fields
 from django.conf import settings
+from django_price.price import PriceObject
 from django_price.price import Price
+from django_price.price import PriceTaxFK
 from composite_field.base import CompositeField
 from composite_field.base import CompositeFieldBase
 from django.db.models import DecimalField
@@ -10,7 +12,7 @@ from django.db.models import ForeignKey
 
 class PriceProxy(CompositeField.Proxy):
     def _set(self, value):
-        if not isinstance(value, Price):
+        if not isinstance(value, PriceObject):
             raise Exception('Cannot assign value which is not a price!')
 
         return super(PriceProxy, self)._set(value)
@@ -19,7 +21,8 @@ class PriceProxy(CompositeField.Proxy):
         value = self.netto
         if self.is_gross:
             value = self.gross
-        return Price(
+
+        return self._composite_field.price_class(
             value,
             self.tax,
             self.is_gross
@@ -28,7 +31,7 @@ class PriceProxy(CompositeField.Proxy):
 
 class BasePriceMetaclass(object):
     def init(self):
-        pass
+        self.price_class = Price
 
     def get_proxy(self, model):
         return PriceProxy(self, model)
@@ -57,3 +60,4 @@ class DecimalPriceField(BasePriceMetaclass, CompositeField):
 class DecimalPriceFieldTaxForeignKey(DecimalPriceField):
     def init(self):
         self.subfields['tax'] = ForeignKey(settings.PRICE_TAX_MODEL)
+        self.price_class = PriceTaxFK
