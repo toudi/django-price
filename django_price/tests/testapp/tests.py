@@ -1,6 +1,10 @@
 from decimal import Decimal
 from django.test import TestCase
 from django_price.tests.testapp.models import TestModel
+from django_price.tests.testapp.models import TestModelMoney
+from django_price.tests.testapp.models import TestModelTaxForeignKey
+from django_price.models.tax import Tax
+from moneyed import Money
 from django_price.price import Price
 from django.db.models import F
 
@@ -38,3 +42,28 @@ class ModelTestCase(TestCase):
         model.save()
         model = TestModel.objects.get(pk=model.pk)
         self.assertEquals(model.price.netto, Decimal(20))
+
+
+class MoneyTestCase(TestCase):
+    def test_can_pass_money_instance(self):
+        amount = Money(10, 'USD')
+        price = Price(amount)
+        model = TestModelMoney(price=price)
+        self.assertEquals(model.price_netto_currency, unicode(amount.currency))
+        self.assertIsInstance(model.price.get_value().netto, Money)
+
+
+class TaxAsForeignKeyTestCase(TestCase):
+    def test_that_tax_field_is_a_foreign_key(self):
+        tax = Tax.objects.create(
+            description='test tax', value=Decimal('0.22')
+        )
+
+        price = Price(100, tax=tax)
+
+        model = TestModelTaxForeignKey(
+            price=price
+        )
+
+        self.assertEquals(122, model.price.gross)
+        self.assertEquals(tax.pk, model.price_tax_id)

@@ -8,6 +8,7 @@ setup(
     url='https://github.com/toudi/django-price',
     packages=(
         'django_price',
+        'django_price.fields',
         'django_price.forms',
         'django_price.tests',
     ),

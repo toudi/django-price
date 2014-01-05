@@ -8,11 +8,18 @@ class Price(object):
         self.value = value
         self.is_gross = is_gross
         self.tax = tax
-        if self.tax > 1:
-            self.tax /= 100
+        if isinstance(self.tax, Decimal):
+            if self.tax > 1:
+                self.tax /= 100
 
     def set_tax(self, value):
-        self._tax = Decimal(value)
+        try:
+            self._tax = Decimal(value)
+        except TypeError:
+            if hasattr(value, 'pk'):
+                self._tax = value
+            else:
+                raise Exception('The tax you provided is neither a foreign key nor a decimal')
 
     def get_tax(self):
         return self._tax
@@ -54,7 +61,10 @@ class Price(object):
     gross = property(get_gross, set_gross)
 
     def tax_value(self):
-        return self.value * self.tax
+        tax = self.tax
+        if not isinstance(tax, Decimal):
+            tax = tax.value
+        return self.value * tax
 
     def __repr__(self):
         return 'Price(netto=%r,gross=%r,tax=%r,tax_value=%r,is_gross=%r)' % (
