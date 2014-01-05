@@ -23,3 +23,8 @@ class ModelTestCase(TestCase):
 
         # assert that getting by column name also works
         self.assertEquals(price.netto, model.price.netto)
+
+        # now, let's create a model, but let's only assign one value.
+        model = TestModel(price_netto=Decimal(15))
+        self.assertIsInstance(model.price.get_value(), Price)
+        self.assertEquals(model.price.get_value().netto, Decimal(15))
