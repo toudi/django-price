@@ -23,9 +23,9 @@ class PriceProxy(CompositeField.Proxy):
             value = self.gross
 
         return self._composite_field.price_class(
-            value,
-            self.tax,
-            self.is_gross
+            value=value,
+            tax=self.tax,
+            is_gross=self.is_gross
         )
 
 
