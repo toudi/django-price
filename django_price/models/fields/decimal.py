@@ -1,6 +1,7 @@
 from django.db.models import fields
 from django.conf import settings
 from django_price.price import PriceObject
+from django_price.value import Value
 from django_price.price import Price
 from django_price.price import PriceTaxFK
 from composite_field.base import CompositeField
@@ -26,6 +27,22 @@ class PriceProxy(CompositeField.Proxy):
             value=value,
             tax=self.tax,
             is_gross=self.is_gross
+        )
+
+    def instance(self):
+        return self.get_value()
+
+class ValueProxy(CompositeField.Proxy):
+    def _set(self, value):
+        if not isinstance(value, Value):
+            raise Exception('Cannot assign value which is not a Value object!')
+
+        return super(ValueProxy, self)._set(value)
+
+    def instance(self):
+        return Value(
+            quantity=self.quantity,
+            price=self.price.instance()
         )
 
 
@@ -56,6 +73,21 @@ class DecimalPriceField(BasePriceMetaclass, CompositeField):
         self.init()
         super(DecimalPriceField, self).__init__(prefix)
 
+class DecimalValueField(BasePriceMetaclass, CompositeField):
+    def __init__(self, prefix=None, decimal_places=2, max_digits=12):
+        self.subfields = {
+            'price': DecimalPriceField(prefix, decimal_places, max_digits),
+            'quantity': DecimalField(max_digits=12, decimal_places=4),
+        }
+        self.init()
+        super(DecimalValueField, self).__init__(prefix)
+
+    def get_proxy(self, model):
+        return ValueProxy(self, model)
+
+    # def init(self):
+    #     self.subfields['quantity'] =
+    #     super(DecimalValueField, self).init()
 
 class DecimalPriceFieldTaxForeignKey(DecimalPriceField):
     def init(self):

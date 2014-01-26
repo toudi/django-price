@@ -1,4 +1,5 @@
 from django_price.models.fields.decimal import BasePriceMetaclass
+from django_price.models.fields.decimal import ValueProxy
 from django_price.price import PriceTaxFK
 from composite_field.base import CompositeField
 from djmoney.models.fields import MoneyField
@@ -32,6 +33,25 @@ class MoneyPriceField(BasePriceMetaclass, CompositeField):
         }
         self.init()
         super(MoneyPriceField, self).__init__(prefix)
+
+class MoneyValueField(BasePriceMetaclass, CompositeField):
+    def __init__(
+            self,
+            prefix=None,
+            default_currency=None,
+            decimal_places=2,
+            max_digits=12,
+    ):
+        self.subfields = {
+            'price': MoneyPriceField(prefix, default_currency, decimal_places, max_digits),
+            'quantity': DecimalField(max_digits=12, decimal_places=4),
+        }
+        self.init()
+        super(MoneyValueField, self).__init__(prefix)
+
+    def get_proxy(self, model):
+        return ValueProxy(self, model)
+
 
 
 class MoneyPriceFieldTaxForeignKey(MoneyPriceField):
