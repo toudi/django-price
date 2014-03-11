@@ -12,5 +12,7 @@ class AbstractTax(models.Model):
 class Tax(AbstractTax):
     # pass
 
+    def __unicode__(self):
+        return '%s (%.2f %%)' % (self.description, self.value)
     class Meta:
         app_label = 'django_price'
