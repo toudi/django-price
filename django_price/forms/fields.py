@@ -1,40 +1,28 @@
 from django.utils.translation import ugettext_lazy as _
 from django import forms
-from widgets import InputPriceWidget
-from django_price import Price
+from moneyed import Money
+from widgets import InputMoneyPriceWidget
+from django_price.price import PriceTaxFK
+from django_price.models import Tax
+from djmoney.forms.fields import MoneyField
+from djmoney.forms.widgets import CURRENCY_CHOICES
+from django.forms import fields
 
-__all__ = ('PriceField',)
+__all__ = ('MoneyPriceFormField',)
 
-class PriceField(forms.DecimalField):
-    
+class MoneyPriceFormField(forms.MultiValueField):
     def __init__(self, *args, **kwargs):
-        self.widget = InputPriceWidget()
-        super(PriceField, self).__init__(*args, **kwargs)
-    
-    def to_python(self, value):
-        if not isinstance(value, tuple):
-            raise Exception("Invalid money input, expected sum and currency.")
+        price_field = forms.DecimalField()
+        currency_field = forms.ChoiceField(choices=CURRENCY_CHOICES)
+        is_gross_field = forms.BooleanField(required=False)
+        tax_field = forms.ModelChoiceField(queryset=Tax.objects.all(), required=True)
+        fields = (price_field, currency_field, is_gross_field, tax_field)
+        self.widget = InputMoneyPriceWidget(fields)
+        super(MoneyPriceFormField, self).__init__(fields, *args, **kwargs)
 
-        price = super(PriceField, self).to_python(value[0])
-        # i don't quite like this part of code, but currently don't know how to do it better.
-        # the idea is, if the value tuple is long enough, i assume that this is Money instance
-        # (With the currency). Otherwise - i assume regular decimal field
-        if len(value) > 3 and value[1] is not None:
-            from moneyed import Money
-            price = Money(amount=value[0], currency=value[1])
-        is_gross = value[2]
-        tax = value[-1]
-        # the order of those fields can be extracted from widgets.py file (method value_from_datadict)
-        if not tax:
-            raise forms.ValidationError(_(u'Tax is missing'))
-        out = Price(value=price, tax=tax, is_gross=is_gross)
-        return Price(value=price, tax=tax, is_gross=is_gross)
-    
-    def validate(self, value):
-        if not isinstance(value, Price):
-            raise Exception("Invalid money input, expected Money object to validate.")
-        
-        try:
-            super(PriceField, self).validate(value._value.amount)
-        except:
-            super(PriceField, self).validate(value._value)
+    def compress(self, data_list):
+        return PriceTaxFK(
+            value=Money(data_list[0],data_list[1]),
+            is_gross=data_list[2],
+            tax=data_list[3]
+        )

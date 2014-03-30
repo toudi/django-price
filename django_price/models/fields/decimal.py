@@ -32,6 +32,10 @@ class PriceProxy(CompositeField.Proxy):
     def instance(self):
         return self.get_value()
 
+    def __cmp__(self, other):
+        return 0
+
+
 class ValueProxy(CompositeField.Proxy):
     def _set(self, value):
         if not isinstance(value, Value):

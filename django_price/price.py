@@ -73,7 +73,8 @@ class Price(PriceObject):
         value = self.value * tax
 
         if self.is_gross:
-            value /= (1 + tax)
+            # can't use division because of lack of __div__ operator in Money
+            value *= 1/(1 + tax)
 
         return value
 

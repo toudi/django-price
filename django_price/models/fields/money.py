@@ -14,6 +14,7 @@ class MoneyPriceField(BasePriceMetaclass, CompositeField):
         self,
         prefix=None,
         default_currency=None,
+        currency_choices=None,
         decimal_places=2,
         max_digits=12,
     ):
@@ -21,10 +22,12 @@ class MoneyPriceField(BasePriceMetaclass, CompositeField):
             'netto': MoneyField(
                 max_digits=max_digits, decimal_places=decimal_places,
                 default_currency=default_currency,
+                currency_choices=currency_choices
             ),
             'gross': MoneyField(
                 max_digits=max_digits, decimal_places=decimal_places,
                 default_currency=default_currency,
+                currency_choices=currency_choices
             ),
             'is_gross': BooleanField(default=False),
             'tax': DecimalField(
@@ -39,11 +42,12 @@ class MoneyValueField(BasePriceMetaclass, CompositeField):
             self,
             prefix=None,
             default_currency=None,
+            currency_choices=None,
             decimal_places=2,
             max_digits=12,
     ):
         self.subfields = {
-            'price': MoneyPriceField(prefix, default_currency, decimal_places, max_digits),
+            'price': MoneyPriceField(prefix, default_currency, decimal_places, max_digits, currency_choices=currency_choices),
             'quantity': DecimalField(max_digits=12, decimal_places=4),
         }
         self.init()
