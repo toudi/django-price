@@ -1,11 +1,13 @@
 from django import forms
+from django.core.exceptions import ObjectDoesNotExist
 
 __all__ = ('InputPriceWidget',)
 
 class NotRequiredCheckboxInput(forms.CheckboxInput):
     def build_attrs(self, extra_attrs=None, **kwargs):
         attrs = super(NotRequiredCheckboxInput, self).build_attrs(extra_attrs, **kwargs)
-        del attrs['required']
+        if 'required' in attrs:
+            del attrs['required']
         return attrs
 
 class InputMoneyPriceWidget(forms.MultiWidget):
@@ -18,6 +20,9 @@ class InputMoneyPriceWidget(forms.MultiWidget):
 
     def decompress(self, value):
         if value:
-            v = value.instance()
-            return [v.value.amount, v.value.currency, v.is_gross, v.tax.pk]
+            try:
+                v = value.instance()
+                return [v.value.amount, v.value.currency, v.is_gross, v.tax.pk]
+            except ObjectDoesNotExist:
+                pass
         return [None, None, None, None]
