@@ -16,6 +16,7 @@ class MoneyPriceField(BasePriceMetaclass, CompositeField):
         default_currency=None,
         decimal_places=2,
         max_digits=12,
+        null=None
     ):
         self.subfields = {
             'netto': MoneyField(
@@ -31,6 +32,7 @@ class MoneyPriceField(BasePriceMetaclass, CompositeField):
                 max_digits=max_digits, decimal_places=decimal_places,
             ),
         }
+        self.null = null
         self.init()
         super(MoneyPriceField, self).__init__(prefix)
 
@@ -56,5 +58,5 @@ class MoneyValueField(BasePriceMetaclass, CompositeField):
 
 class MoneyPriceFieldTaxForeignKey(MoneyPriceField):
     def init(self):
-        self.subfields['tax'] = ForeignKey(settings.PRICE_TAX_MODEL)
+        self.subfields['tax'] = ForeignKey(settings.PRICE_TAX_MODEL, null=self.null)
         self.price_class = PriceTaxFK

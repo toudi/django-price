@@ -22,7 +22,8 @@ class InputMoneyPriceWidget(forms.MultiWidget):
         if value:
             try:
                 v = value.instance()
-                return [v.value.amount, v.value.currency, v.is_gross, v.tax.pk]
+                if v.tax is not None:
+                    return [v.value.amount, v.value.currency, v.is_gross, v.tax.pk]
             except ObjectDoesNotExist:
                 pass
         return [None, None, None, None]

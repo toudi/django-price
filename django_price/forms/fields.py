@@ -21,6 +21,8 @@ class MoneyPriceFormField(forms.MultiValueField):
         super(MoneyPriceFormField, self).__init__(fields, *args, **kwargs)
 
     def compress(self, data_list):
+        if data_list[0] is None:
+            return None
         return PriceTaxFK(
             value=Money(data_list[0],data_list[1]),
             is_gross=data_list[2],
