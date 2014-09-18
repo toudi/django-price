@@ -1,3 +1,4 @@
+#-*- coding: utf-8 -*-
 from setuptools import setup
 
 setup(
@@ -10,6 +11,7 @@ setup(
         'django_price',
         'django_price.models',
         'django_price.models.fields',
+        'django_price.templatetags',
         'django_price.forms',
         'django_price.tests',
     ),
