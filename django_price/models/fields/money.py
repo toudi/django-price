@@ -7,13 +7,14 @@ from django.db.models import DecimalField
 from django.db.models import BooleanField
 from django.db.models import ForeignKey
 from django.conf import settings
+from djmoney.settings import DEFAULT_CURRENCY
 
 
 class MoneyPriceField(BasePriceMetaclass, CompositeField):
     def __init__(
         self,
         prefix=None,
-        default_currency=None,
+        default_currency=DEFAULT_CURRENCY,
         decimal_places=2,
         max_digits=12,
         null=None
