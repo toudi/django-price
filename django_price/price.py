@@ -75,6 +75,10 @@ class Price(PriceObject):
         if self.is_gross:
             # can't use division because of lack of __div__ operator in Money
             value *= 1/(1 + tax)
+            if type(value) is Decimal:
+                value = value.quantize(Decimal('0.01'))
+            else:
+                value.amount = value.amount.quantize(Decimal('0.01'))
 
         return value
 
