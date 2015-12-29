@@ -41,7 +41,7 @@ class MoneyValueField(BasePriceMetaclass, CompositeField):
     def __init__(
             self,
             prefix=None,
-            default_currency=None,
+            default_currency=DEFAULT_CURRENCY,
             decimal_places=2,
             max_digits=12,
     ):
