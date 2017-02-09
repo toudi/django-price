@@ -1,1 +1,1 @@
-from tax import *
+from .tax import *
